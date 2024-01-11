@@ -1,0 +1,31 @@
+# inspired by azure-kubernetes-service-kustomize workflow
+name: deploy-notino-k8s
+run-name: Deploy to Notino K8S (started ${{ github.actor }})
+
+on:
+  workflow_run:
+    workflows: [container-publish]
+    types:
+      - completed
+
+  workflow_call:
+    inputs:
+      manifestPath:
+        description: "path of build kubernetes manifest yaml"
+        type: string
+        required: true
+
+jobs:
+  deploy:
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    runs-on: ubuntu-latest
+    steps:
+      # Checks out the repository this file is in
+      - uses: actions/checkout@v4
+
+      # get artifact
+
+      # kubectl apply it

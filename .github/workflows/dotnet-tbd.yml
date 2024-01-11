@@ -1,0 +1,31 @@
+name: dotnet-tbd
+run-name: Build and deploy to Notino K8S (started ${{ github.actor }})
+
+on:
+  workflow_call:
+    inputs:
+      config-path:
+        required: true
+        type: string
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-dotnet.yml
+    with:
+      dotnet-version: 8.x
+
+  container:
+    uses: ./.github/workflows/container-publish.yml
+    needs: build
+
+  kustomize:
+    uses: ./.github/workflows/kustomize.yml
+    needs: container
+    with:
+      kustomizationPath: "k8s/envs/development"
+
+  deploy:
+    uses: ./.github/workflows/deploy-notino-k8s.yml
+    needs: kustomize
+    with:
+      manifestPath: ${{ needs.kustomize.outputs.manifestPath }}

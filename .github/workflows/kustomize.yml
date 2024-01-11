@@ -1,0 +1,48 @@
+# inspired by azure-kubernetes-service-kustomize workflow
+name: kustomize
+run-name: Kustomize build (started ${{ github.actor }})
+
+on:
+  workflow_run:
+    workflows: [container-publish]
+    types:
+      - completed
+  workflow_call:
+    inputs:
+      kustomizationPath:
+        required: false
+        type: string
+        default: "k8s/envs/development"
+        description: "folder in repo where kustomization.yaml is located"
+    outputs:
+      manifestPath:
+        description: "path of build kubernetes manifest yaml"
+        value: ${{ jobs.deploy.outputs.manifestPath }}
+
+jobs:
+  deploy:
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    runs-on: ubuntu-latest
+    outputs:
+      manifestPath: ${{ steps.bake.outputs.manifestsBundle }}
+    steps:
+      # Checks out the repository this file is in
+      - uses: actions/checkout@v4
+
+      # Runs Kustomize to create manifest files
+      - name: Bake deployment
+        uses: azure/k8s-bake@v2
+        with:
+          renderEngine: "kustomize"
+          kustomizationPath: ${{ inputs.kustomizationPath }}
+          kubectl-version: latest
+        id: bake
+
+      - name: Build as artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: kustomize
+          path: ${{ steps.bake.outputs.manifestsBundle }}
